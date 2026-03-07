@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="#2563eb"/>
+
+  <!-- People icon (two figures) -->
+  <!-- Left person -->
+  <circle cx="190" cy="180" r="52" fill="white"/>
+  <path d="M90 340 C90 280 140 245 190 245 C240 245 290 280 290 340 L290 370 L90 370 Z" fill="white"/>
+
+  <!-- Right person (slightly behind) -->
+  <circle cx="320" cy="175" r="44" fill="rgba(255,255,255,0.7)"/>
+  <path d="M230 340 C235 285 275 252 320 252 C365 252 410 285 420 340 L420 370 L230 370 Z" fill="rgba(255,255,255,0.7)"/>
+
+  <!-- Bottom label bar -->
+  <rect x="80" y="390" width="352" height="12" rx="6" fill="rgba(255,255,255,0.4)"/>
+  <rect x="140" y="416" width="232" height="10" rx="5" fill="rgba(255,255,255,0.25)"/>
+</svg>

@@ -1,0 +1,2 @@
+{"environment":"development","error":"database \"hrms_db\" does not exist","level":"error","message":"Failed to connect to database","service":"hrms-lite-api","timestamp":"2026-03-07T14:32:18.733+05:30"}
+{"environment":"development","error":"database \"hrms_db\" does not exist","level":"error","message":"Failed to connect to database","service":"hrms-lite-api","timestamp":"2026-03-07T14:32:48.234+05:30"}

@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "C:\\Users\\prash\\hrms\\backend\\logs\\.66030ff20e2f580ca45428c5874dba6c04abbf01-audit.json",
+    "files": [
+        {
+            "date": 1772874087777,
+            "name": "C:\\Users\\prash\\hrms\\backend\\logs\\app-2026-03-07.log",
+            "hash": "9322ce7a4c155f46bde4e31260a978b0257e5596fe610b6910ecdb087d04ed48"
+        }
+    ],
+    "hashType": "sha256"
+}
