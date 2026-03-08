@@ -1,4 +1,5 @@
-import Database from 'better-sqlite3';
+// import Database from 'better-sqlite3';
+import DatabaseConstructor, { Database } from "better-sqlite3";
 import path from 'path';
 import fs from 'fs';
 import { config } from '../config';
@@ -14,9 +15,10 @@ if (!fs.existsSync(dbDir)) {
 }
 
 // ── Open (or create) the SQLite database file ─────────────────────────────────
-export const db: Database = new Database(config.db.path, {
-  verbose: (sql: string) => {
-    logger.debug('sqlite_statement', { sql: sql.trim().slice(0, 200) });
+// export const db: Database = new Database(config.db.path, {
+export const db: Database = new DatabaseConstructor(config.db.path, {
+  verbose: (message: unknown) => {
+    logger.debug('sqlite_statement', { sql: String(message).trim().slice(0, 200) });
   },
 });
 

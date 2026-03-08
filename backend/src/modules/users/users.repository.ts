@@ -1,5 +1,5 @@
 import { query, run } from '../../database';
-import { RegisterUserInput } from './validators';
+import { RegisterUserInput } from './users.validators';
 
 export interface UserRow {
   id: number;
