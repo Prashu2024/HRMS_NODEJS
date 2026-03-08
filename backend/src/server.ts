@@ -1,30 +1,27 @@
 import app from './app';
 import { config } from './config';
-import { checkDbConnection, closeDb } from './database';
-import { runMigrations } from './database/migrations';
+import { initializeDatabase, closeDb } from './database';
 import { logLifecycle, logger } from './common/logger';
 
 const PORT = config.server.port;
 
 function bootstrap(): void {
-  // 1. Verify DB is accessible (synchronous)
+
   try {
-    checkDbConnection();
-    logLifecycle('db_connected', { path: config.db.path });
+    initializeDatabase();
+
+    logLifecycle('db_initialized', {
+      path: config.db.path,
+    });
+
   } catch (err) {
-    logger.error('Failed to open SQLite database', { error: (err as Error).message });
+    logger.error('Database bootstrap failed', {
+      error: (err as Error).message,
+    });
+
     process.exit(1);
   }
 
-  // 2. Run migrations (synchronous — idempotent CREATE IF NOT EXISTS)
-  try {
-    runMigrations();
-  } catch (err) {
-    logger.error('Migration failed', { error: (err as Error).message });
-    process.exit(1);
-  }
-
-  // 3. Start HTTP server
   const server = app.listen(PORT, () => {
     logLifecycle('server_started', {
       port: PORT,
@@ -34,7 +31,6 @@ function bootstrap(): void {
     });
   });
 
-  // ── Graceful shutdown ─────────────────────────────────────────────────────
   const shutdown = (signal: string): void => {
     logLifecycle('shutdown_initiated', { signal });
 
@@ -48,19 +44,25 @@ function bootstrap(): void {
     setTimeout(() => {
       logger.error('Forced shutdown after timeout');
       process.exit(1);
-    }, 10_000);
+    }, 10000);
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT',  () => shutdown('SIGINT'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 
   process.on('uncaughtException', (err: Error) => {
-    logger.error('Uncaught exception', { error: err.message, stack: err.stack });
+    logger.error('Uncaught exception', {
+      error: err.message,
+      stack: err.stack,
+    });
+
     shutdown('uncaughtException');
   });
 
   process.on('unhandledRejection', (reason: unknown) => {
-    logger.error('Unhandled promise rejection', { reason: String(reason) });
+    logger.error('Unhandled promise rejection', {
+      reason: String(reason),
+    });
   });
 }
 

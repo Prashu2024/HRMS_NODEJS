@@ -3,6 +3,9 @@ import path from 'path';
 import fs from 'fs';
 import { config } from '../config';
 import logger, { logDbQuery } from '../common/logger';
+import { runMigrations } from './migrations';
+
+let initialized = false;
 
 // ── Ensure the data directory exists before opening the file ─────────────────
 const dbDir = path.dirname(config.db.path);
@@ -11,23 +14,49 @@ if (!fs.existsSync(dbDir)) {
 }
 
 // ── Open (or create) the SQLite database file ─────────────────────────────────
-// verbose: logs every statement at debug level via our logger
 export const db = new Database(config.db.path, {
   verbose: (sql: string) => {
     logger.debug('sqlite_statement', { sql: sql.trim().slice(0, 200) });
   },
 });
 
-// WAL mode — much better write performance and concurrent read safety
+// WAL mode — much better write performance
 db.pragma('journal_mode = WAL');
-// Enforce FK constraints (SQLite disables them by default)
+
+// Enable foreign keys
 db.pragma('foreign_keys = ON');
 
 logger.info('SQLite database opened', { path: config.db.path });
 
-// ── Generic timed query helper ────────────────────────────────────────────────
-// Returns rows as typed array; uses ? placeholders (SQLite style).
-// Named params (:name) are also supported — pass an object instead of array.
+/* -------------------------------------------------------------------------- */
+/* DATABASE INITIALIZATION (for local + serverless)                           */
+/* -------------------------------------------------------------------------- */
+
+export function initializeDatabase(): void {
+  if (initialized) return;
+
+  try {
+    db.prepare('SELECT 1').get();
+
+    logger.info('SQLite connection verified');
+
+    runMigrations();
+
+    logger.info('Database migrations ensured');
+
+    initialized = true;
+  } catch (err) {
+    logger.error('Database initialization failed', {
+      error: (err as Error).message,
+    });
+    throw err;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* QUERY HELPERS                                                              */
+/* -------------------------------------------------------------------------- */
+
 export function query<T = Record<string, unknown>>(
   sql: string,
   params: unknown[] | Record<string, unknown> = []
@@ -44,8 +73,6 @@ export function query<T = Record<string, unknown>>(
     if (operation === 'SELECT' || sql.trim().toUpperCase().startsWith('WITH')) {
       rows = stmt.all(params) as T[];
     } else {
-      // For INSERT/UPDATE/DELETE — run() returns meta, not rows.
-      // If the statement has RETURNING we still need .all()
       if (sql.toUpperCase().includes('RETURNING')) {
         rows = stmt.all(params) as T[];
       } else {
@@ -64,13 +91,16 @@ export function query<T = Record<string, unknown>>(
     return rows;
   } catch (err) {
     const error = err as Error;
-    logDbQuery({ operation, table, durationMs: Date.now() - start, error: error.message });
+    logDbQuery({
+      operation,
+      table,
+      durationMs: Date.now() - start,
+      error: error.message,
+    });
     throw err;
   }
 }
 
-// ── Run a single mutating statement (INSERT / UPDATE / DELETE) ────────────────
-// Returns { changes, lastInsertRowid }
 export function run(
   sql: string,
   params: unknown[] | Record<string, unknown> = []
@@ -82,28 +112,38 @@ export function run(
 
   try {
     const result = db.prepare(sql).run(params);
-    logDbQuery({ operation, table, durationMs: Date.now() - start, rowCount: result.changes });
+
+    logDbQuery({
+      operation,
+      table,
+      durationMs: Date.now() - start,
+      rowCount: result.changes,
+    });
+
     return result;
   } catch (err) {
     const error = err as Error;
-    logDbQuery({ operation, table, durationMs: Date.now() - start, error: error.message });
+
+    logDbQuery({
+      operation,
+      table,
+      durationMs: Date.now() - start,
+      error: error.message,
+    });
+
     throw err;
   }
 }
 
-// ── Transaction helper ────────────────────────────────────────────────────────
-// better-sqlite3 transactions are synchronous — wrap in a typed function
 export function withTransaction<T>(fn: () => T): T {
   const txn = db.transaction(fn);
   return txn();
 }
 
-// ── Health check ──────────────────────────────────────────────────────────────
 export function checkDbConnection(): void {
   db.prepare('SELECT 1').get();
 }
 
-// ── Close on process exit ─────────────────────────────────────────────────────
 export function closeDb(): void {
   db.close();
   logger.info('SQLite database closed');
