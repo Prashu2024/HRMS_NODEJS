@@ -114,7 +114,8 @@ export function query<T = Record<string, unknown>>(
 export function run(
   sql: string,
   params: unknown[] | Record<string, unknown> = []
-): Database.RunResult {
+// ): Database.RunResult {
+): import("better-sqlite3").RunResult {
 
   const start = Date.now();
   const words = sql.trim().split(/\s+/);
