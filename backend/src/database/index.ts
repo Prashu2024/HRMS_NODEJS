@@ -14,7 +14,7 @@ if (!fs.existsSync(dbDir)) {
 }
 
 // ── Open (or create) the SQLite database file ─────────────────────────────────
-export const db = new Database(config.db.path, {
+export const db: Database = new Database(config.db.path, {
   verbose: (sql: string) => {
     logger.debug('sqlite_statement', { sql: sql.trim().slice(0, 200) });
   },
@@ -61,24 +61,28 @@ export function query<T = Record<string, unknown>>(
   sql: string,
   params: unknown[] | Record<string, unknown> = []
 ): T[] {
+
   const start = Date.now();
   const words = sql.trim().split(/\s+/);
   const operation = (words[0] ?? 'QUERY').toUpperCase();
   const table = (words[1] ?? 'unknown').replace(/[^a-zA-Z_]/g, '');
 
   try {
+
     const stmt = db.prepare(sql);
     let rows: T[];
 
     if (operation === 'SELECT' || sql.trim().toUpperCase().startsWith('WITH')) {
       rows = stmt.all(params) as T[];
     } else {
+
       if (sql.toUpperCase().includes('RETURNING')) {
         rows = stmt.all(params) as T[];
       } else {
         stmt.run(params);
         rows = [];
       }
+
     }
 
     logDbQuery({
@@ -89,14 +93,18 @@ export function query<T = Record<string, unknown>>(
     });
 
     return rows;
+
   } catch (err) {
+
     const error = err as Error;
+
     logDbQuery({
       operation,
       table,
       durationMs: Date.now() - start,
       error: error.message,
     });
+
     throw err;
   }
 }
@@ -105,12 +113,14 @@ export function run(
   sql: string,
   params: unknown[] | Record<string, unknown> = []
 ): Database.RunResult {
+
   const start = Date.now();
   const words = sql.trim().split(/\s+/);
   const operation = (words[0] ?? 'RUN').toUpperCase();
   const table = (words[1] ?? 'unknown').replace(/[^a-zA-Z_]/g, '');
 
   try {
+
     const result = db.prepare(sql).run(params);
 
     logDbQuery({
@@ -121,7 +131,9 @@ export function run(
     });
 
     return result;
+
   } catch (err) {
+
     const error = err as Error;
 
     logDbQuery({
